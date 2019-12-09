@@ -29,7 +29,6 @@ colnames(clinicalAssessment)[44:48] <- c('CGI_severity', 'CGI_total',
 
 ## 1.2 read MRS data: in the long format
 MRS.INS <- read.xlsx("Total_MRS_20190415.xlsx", sheetName = "Insula")
-MRS.OFC <- read.xlsx("Total_MRS_20190415.xlsx", sheetName = "OFC")
 MRS.VC <- read.xlsx("Total_MRS_20190415.xlsx", sheetName= "VC")
 
 
@@ -44,8 +43,6 @@ MRS.INS <- MRS.INS[,-38]
 MRS.VC <- MRS.VC[,-38]
 
 
-
-
 #  2) Some odd variable names after reading into the R 
 colnames(MRS.INS)
 colnames(MRS.INS) <- sub('..SD','.SD', colnames(MRS.INS))
@@ -54,14 +51,6 @@ colnames(MRS.INS)<- sub("tissue_corrected.","tissue.corrected", colnames(MRS.INS
 colnames(MRS.INS)<- sub("X","INS", colnames(MRS.INS))
 colnames(MRS.INS) <- sub("GABA.Cr..tissue_corrected.Gannet.", "GABA.Cr.tissue.corrected.Gannet", colnames(MRS.INS))
 colnames(MRS.INS)
-
-colnames(MRS.OFC)
-colnames(MRS.OFC) <- sub('..SD','.SD', colnames(MRS.OFC))
-colnames(MRS.OFC)<- sub("..tissue.corrected.",".tissue.corrected", colnames(MRS.OFC))
-colnames(MRS.OFC)<- sub("tissue_corrected.","tissue.corrected", colnames(MRS.OFC))
-colnames(MRS.OFC) <- sub("GABA.Cr..tissue_corrected.Gannet.", "GABA.Cr.tissue.corrected.Gannet", colnames(MRS.OFC))
-colnames(MRS.OFC) <- sub("X","OFC", colnames(MRS.OFC))
-colnames(MRS.OFC)
 
 colnames(MRS.VC)
 colnames(MRS.VC) <- sub('..SD','.SD', colnames(MRS.VC))
@@ -74,18 +63,14 @@ colnames(MRS.VC)
 
 # 3) inconsistent in subject names between baseline and follow-up
 levels(MRS.INS$Subjects) <- sub('-','_', levels(MRS.INS$Subjects))
-levels(MRS.OFC$Subjects) <- sub('-','_', levels(MRS.OFC$Subjects))
 levels(MRS.VC$Subjects) <- sub('-','_', levels(MRS.VC$Subjects))
-
 
 
 ## 1.4 join to the tables into one big table
 # make sure the index for join is exactly the same in both tables before merging
 
 # 1) join the MRS tables
-MRS <- merge(MRS.INS, MRS.OFC, by=c("ID","Subjects"))
-MRS <- merge(MRS, MRS.VC, by=c("ID","Subjects"))
-
+MRS <- merge(MRS.INS, MRS.VC, by=c("ID","Subjects"))
 
 MRS$stage <- 0
 MRS$stage[grep("3M", MRS$Subjects)] = 3
@@ -96,34 +81,36 @@ MRS$ID <- sub('0_', '', MRS$ID)
 bumedata <- merge(clinicalAssessment, MRS, by=c("ID", "stage"), all.x=TRUE) 
 
 
-
 # 3) check whether the variables are numeric or factor. If it is factor, we need to know which levels it has; 
 # we only allow subject names and sex to be factor in this case.
-# BE CAREFUL, when converting factor to numeric. Replacing the NaNwith NA in the level set before converting 
+# BE CAREFUL, when converting factor to numeric. Replacing the NaN with NA in the level set before converting 
 for (i in c(1:length(bumedata))){
   if(is.factor(bumedata[,i])){
     print(colnames(bumedata)[i])
     print(levels(bumedata[,i]))
   }
 }
+
 #levels(bumedata$cars_i3) <- sub('_','', levels(bumedata$cars_i3)) # it had been addressed in the raw table
 #bumedata$cars_i3 <- as.numeric(as.character(bumedata$cars_i3))
-#bumedata$CRI_total[34] <- 2  #It had been addressed in the raw table
-#bumedata$CRI_total<- droplevels(bumedata$CRI_total)
+#bumedata$CGI_total[34] <- 2  #It had been addressed in the raw table
+#bumedata$CGI_total<- droplevels(bumedata$CGI_total)
+#bumedata$CGI_total<- as.integer(as.character(bumedata$CGI_total)) # newly added
 #bumedata$sex <- droplevels(bumedata$sex) # drop the extra level of ""
-# check the datatype again after the convertion
-#for (i in c(1:length(bumedata))){
-#  if(!is.numeric(bumedata[,i])){
-#    print(colnames(bumedata)[i])
-#    print(levels(bumedata[,i]))
-#  }
-#}
 
 # some missing values were 999  # No signal
-# df <- bumedata %>% replace_with_na_at(.vars = c(colnames(bumedata)[50:130]), condition = ~.x == 999)
-# bumedata <- df
-# rm(df)
+#df <- bumedata %>% replace_with_na_at(.vars = c(colnames(bumedata)[50:130]), condition = ~.x == 999)
+#bumedata <- df
+#rm(df)
 
+#check the datatype again after the convertion
+# for (i in c(1:length(bumedata))){
+#   if(!is.numeric(bumedata[,i])){
+#     print(colnames(bumedata)[i])
+#     print(levels(bumedata[,i]))
+#   }
+# }
+ 
 # recode sex as numeric variable
 bumedata$ismale <- ifelse(bumedata$sex=='M',1,0)
 # write the data after cleanning 
@@ -131,7 +118,6 @@ write.xlsx(bumedata, file = "bumedata20190517.xlsx")
 
 # remove the redundant variables
 rm(MRS.INS)
-rm(MRS.OFC)
 rm(MRS.VC)
 rm(MRS)
 rm(clinicalAssessment)
@@ -146,14 +132,13 @@ rm(clinicalAssessment)
 
 
 ######################################################
-# table 1. characteristics and background 
+# table 1. characteristics and background ############
 ######################################################
 # check the distribution of the data
 # check if any outlier 
 # CAUTION: it is not easily to define an outlier by statistic only. We need a really good reason to exclude
 # some one from the following analysis. For example, this data point has failed in some quality check. Otherwise,
 # we might be asked to report the results using the full data and do sensitivity analysis (maybe a bootstrap)
-
 
 
 bumedata$group4plot <- as.factor(ifelse(bumedata$group==1,'bumetanide','control'))
@@ -186,6 +171,7 @@ colnames(desmat) <- c("n","min", "max", "mean", "sd",
                       "t.df", "t.t", "t.p", 
                       "kw.df", "kw.chi-squared", "kw.p")
 for (i in 5:43){
+
   # descriptive table:: desmat
   description <- describeBy(bumedata.baseline[,i], group = bumedata.baseline$group, mat = TRUE, na.rm = TRUE )
   desmat[i-4,c(1:10)] <- as.matrix(cbind(description[1, c("n","min", "max", "mean", "sd")], 
@@ -201,7 +187,7 @@ for (i in 5:43){
   desmat[i-4,16] <- kwtest$p.value #p value
 }
 print(desmat)
-write.xlsx(desmat, file="resultsoutputNew.xls", sheetName = "baselinebehaviour")
+write.xlsx(desmat, file="resultoutputNew.xls", sheetName = "baselinebehaviour")
 
 
 
@@ -228,7 +214,7 @@ for (i in 16:43){
   desmat[i-15,16] <- kwtest$p.value #p value
 }
 print(desmat)
-write.xlsx(desmat, file="resultsoutputNew.xls", sheetName = "month3behaviour", append = T)
+write.xlsx(desmat, file="resultoutputNew.xls", sheetName = "month3behaviour", append = T)
 
 
 # distribution is not perfect!  but if we count for the whole data set, it is still normally distributed
@@ -276,6 +262,7 @@ ggarrange(plotlist = bp,
 # 3.1 ANCOVA: without nuisance variables : assuming a balanced design at the baseline 
 stats <- data.frame(t = rep(0,28), t.p = rep(1,28), f=rep(0,28), f.p=rep(1,28))
 rownames(stats) <- colnames(bumedata.3mont[16:43])
+
 for (i in 16:43){
   fit <- lm(bumedata.3mont[,i]~ bumedata.3mont$group + bumedata.baseline[,i])
   stats$shapitestp[i-15] <- shapiro.test(residuals(fit))$p.value
@@ -288,7 +275,7 @@ for (i in 16:43){
 }
 print(stats)
 
-write.xlsx(stats, file="resultsoutputNew.xls", sheetName = "drugeffectonbehaviourModel1", append = T)
+write.xlsx(stats, file="resultoutputNew.xls", sheetName = "drugeffectonbehaviourModel1", append = T)
 
 # 3.2 ANCOVA: with nuisance variables 
 stats2 <- data.frame(t = rep(0,28), t.p = rep(1,28), f=rep(0,28), f.p=rep(1,28))
@@ -306,12 +293,13 @@ for (i in 16:43){
   stats2$f.p[i-15] <- ftests["bumedata.3mont$group","Pr(>F)"]
 }
 print(stats2)
-write.xlsx(stats2, file="resultsoutputNew.xls", sheetName = "drugeffectonbehaviourModel2", append = T)
+write.xlsx(stats2, file="resultoutputNew.xls", sheetName = "drugeffectonbehaviourModel2", append = T)
 
 
 # 3.3 LMM: liner mixed effect model with nuisance variables
 stats3 <- data.frame(t = rep(0,28), t.p = rep(1,28), f=rep(0,28), f.p=rep(1,28), f.df=rep(1,28))
 rownames(stats3) <- colnames(bumedata[16:43])
+
 for (i in 16:43){
   score <- bumedata[,i]
   fit <- lmer( score ~  time + group + group*time + ismale + age + IQ + (1|ID), data=bumedata)
@@ -326,28 +314,26 @@ for (i in 16:43){
   stats3$f.df[i-15] <- ftests["time:group","DenDF"]
 }
 print(stats3)
-write.xlsx(stats3, file="resultsoutputNew.xls", sheetName = "drugeffectonbehaviourModel3", append = T)
+write.xlsx(stats3, file="resultoutputNew.xls", sheetName = "drugeffectonbehaviourModel3", append = T)
 
-# cars_tot
-i = 21
-# rerun the above fit to identify the outlier by qqplot of the model residuals
-qqnorm(residuals(fit))
-outlier <- which(abs(residuals(fit))>2)
-
-score <- bumedata[-outlier,i]
-fit <- lmer( score ~  time + group + group*time + ismale + age + IQ + (1|ID), data=bumedata[-outlier,])
-stats3$shapitestp[i-15] <- shapiro.test(residuals(fit))$p.value
-stats3$leventestp[i-15] <- leveneTest(score ~ as.factor(group*time), data=bumedata[-outlier,])[1,3]
-stats3$t[i-15] <- summary(fit)$coefficients["time:group","t value"]
-stats3$t.p[i-15] <- summary(fit)$coefficients["time:group","Pr(>|t|)"]
-stats3$t.df[i-15] <- summary(fit)$coefficients["time:group","df"]
-ftests <- anova(fit, type=1, ddf="Kenward-Roger")
-stats3$f[i-15] <- ftests["time:group","F value"]
-stats3$f.p[i-15] <- ftests["time:group","Pr(>F)"]
-stats3$f.df[i-15] <- ftests["time:group","DenDF"]
-print(stats3[i-15,])
-
-
+# # cars_tot
+# i = 21
+# # rerun the above fit to identify the outlier by qqplot of the model residuals
+# qqnorm(residuals(fit))
+# outlier <- which(abs(residuals(fit))>2)
+# 
+# score <- bumedata[-outlier,i]
+# fit <- lmer( score ~  time + group + group*time + ismale + age + IQ + (1|ID), data=bumedata[-outlier,])
+# stats3$shapitestp[i-15] <- shapiro.test(residuals(fit))$p.value
+# stats3$leventestp[i-15] <- leveneTest(score ~ as.factor(group*time), data=bumedata[-outlier,])[1,3]
+# stats3$t[i-15] <- summary(fit)$coefficients["time:group","t value"]
+# stats3$t.p[i-15] <- summary(fit)$coefficients["time:group","Pr(>|t|)"]
+# stats3$t.df[i-15] <- summary(fit)$coefficients["time:group","df"]
+# ftests <- anova(fit, type=1, ddf="Kenward-Roger")
+# stats3$f[i-15] <- ftests["time:group","F value"]
+# stats3$f.p[i-15] <- ftests["time:group","Pr(>F)"]
+# stats3$f.df[i-15] <- ftests["time:group","DenDF"]
+# print(stats3[i-15,])
 
 
 # permutation test for subscales
@@ -368,7 +354,7 @@ print(perm.p.cars)
 perm.p.cars.fdr <- perm.p.cars
 perm.p.cars.fdr[c(3:17)] <- p.adjust(perm.p.cars[c(3:17)], method = "fdr")
 
-write.xlsx(cbind(perm.p.cars, perm.p.cars.fdr), file="resultsoutputNew.xls", 
+write.xlsx(cbind(perm.p.cars, perm.p.cars.fdr), file="resultoutputNew.xls", 
            sheetName = "drugbehModel3PermFDR", append = T)
 
 
@@ -380,6 +366,7 @@ sig.beh <- c("cars_tot", "item_s3")
 # group comparison
 bp <- list()
 s <- 1
+
 for (i in sig.beh){
   bp[[s]] <- ggplot(data=bumedata, aes_string(x = "group4plot", y = i, fill = "stage4plot")) + 
     geom_boxplot(position=position_dodge(1)) +  
@@ -428,36 +415,36 @@ dev.off()
 
 
 
-# 3.4 compare CRI indeces
+# 3.4 compare CGI indeces
 
 # count
-table(bumedata.3mont$CRI_score, bumedata.3mont$group)
-table(bumedata.3mont$CRI_index, bumedata.3mont$group)
-table(bumedata.3mont$CRI_severity, bumedata.3mont$group)
-table(bumedata.3mont$CRI_total, bumedata.3mont$group)
-table(bumedata.3mont$CRI_side, bumedata.3mont$group)
+table(bumedata.3mont$CGI_score, bumedata.3mont$group)
+table(bumedata.3mont$CGI_index, bumedata.3mont$group)
+table(bumedata.3mont$CGI_severity, bumedata.3mont$group)
+table(bumedata.3mont$CGI_total, bumedata.3mont$group)
+table(bumedata.3mont$CGI_side, bumedata.3mont$group)
 
 # nonparametric test
-stats.cri <- matrix(rep(0, 20), ncol = 4, nrow = 5)
-rownames(stats.cri) <- colnames(bumedata.3mont)[c(44:48)]
-colnames(stats.cri) <- c("degree of freedom", "Kruskal-Wallis chi-squared", "p-value", "fdr-p")
-# wilcox.test(CRI_score~group, data=bumedata.3mont)  failed to converge
+stats.cgi <- matrix(rep(0, 20), ncol = 4, nrow = 5)
+rownames(stats.cgi) <- colnames(bumedata.3mont)[c(44:48)]
+colnames(stats.cgi) <- c("degree of freedom", "Kruskal-Wallis chi-squared", "p-value", "fdr-p")
+# wilcox.test(CGI_score~group, data=bumedata.3mont)  failed to converge
 for (i in c(44:48)){
   kstest <- kruskal.test(bumedata.3mont[,i]~group, data=bumedata.3mont)  # significant
-  stats.cri[i-43,c(1:3)] <- c(kstest$parameter, kstest$statistic, kstest$p.value)
+  stats.cgi[i-43,c(1:3)] <- c(kstest$parameter, kstest$statistic, kstest$p.value)
 }
 
-stats.cri[,"fdr-p"] <- t(p.adjust(stats.cri[,"p-value"], method = "fdr"))
-print(stats.cri)
-write.xlsx(stats.cri, file="resultsoutputNew.xls", sheetName = "month3CGI", append = T)
+stats.cgi[,"fdr-p"] <- t(p.adjust(stats.cgi[,"p-value"], method = "fdr"))
+print(stats.cgi)
+write.xlsx(stats.cgi, file="resultoutputNew.xls", sheetName = "month3CGI2", append = T)
 
 
 # permutation to confirm
 # library(coin)
 
-# independence_test(CRI_score~group, data=bumedata.3mont) # sign
-# independence_test(CRI_index~group, data=bumedata.3mont) # sign
-# independence_test(CRI_total~group, data=bumedata.3mont) # sign
+# independence_test(CGI_score~group, data=bumedata.3mont) # sign
+# independence_test(CGI_index~group, data=bumedata.3mont) # sign
+# independence_test(CGI_total~group, data=bumedata.3mont) # sign
 
 ##########################
 ##########################
@@ -469,52 +456,45 @@ write.xlsx(stats.cri, file="resultsoutputNew.xls", sheetName = "month3CGI", appe
 # 4.0 quality control
 
 # NAA+NAAG %SD < 20  &  FWHM < 0.05 & SNR > 15
-bumedata$QC <- matrix(rep(0,3*dim(bumedata)[1]), nrow = dim(bumedata)[1], ncol = 3)
-ROI.names = c("INS","OFC", "VC")
-FWHM.names = c("FWHM.x", "FWHM.y", "FWHM")
-SNR.names = c("SNR.x", "SNR.y", "SNR")
-des.QC <- matrix(rep(0,6*3), ncol = 2*3, nrow = 3)
+bumedata$QC <- matrix(rep(0,2*dim(bumedata)[1]), nrow = dim(bumedata)[1], ncol = 2)
+ROI.names = c("INS", "VC")
+FWHM.names = c("FWHM.x", "FWHM.y")
+SNR.names = c("SNR.x", "SNR.y")
+des.QC <- matrix(rep(0,6*2), ncol = 2*3, nrow = 2)
 rownames(des.QC) <- ROI.names
 colnames(des.QC) <- c("SD.mean", "SD.sd","FW.mean", "FW.sd","SNR.mean", "SNR.sd")
-for (i in c(1:3)){
+for (i in c(1:2)){
   NAAplusSD = paste0(ROI.names[i], '.NAA.NAAG.SD')
   bumedata$QC[,i] <- (bumedata[[NAAplusSD]] < 20 & bumedata[[FWHM.names[i]]] < 0.05 & bumedata[[SNR.names[i]]] > 15)
   des.QC[i,c(1,2)] <- as.matrix(describe(bumedata[[NAAplusSD]]))[c(3,4)]
   des.QC[i,c(3,4)] <- as.matrix(describe(bumedata[[FWHM.names[i]]]))[c(3,4)]
   des.QC[i,c(5,6)] <- as.matrix(describe(bumedata[[SNR.names[i]]]))[c(3,4)]
 }
-counts <- matrix(rep(0,3*3), nrow = 3, ncol = 3, dimnames = list(c("baseline", "3 month", 'paired'), ROI.names))
+counts <- matrix(rep(0,3*2), nrow = 3, ncol = 2, dimnames = list(c("baseline", "3 month", 'paired'), ROI.names))
 counts[1,] <- colSums(bumedata$QC[which(bumedata$stage==0),], na.rm =  T)
 counts[2,] <- colSums(bumedata$QC[which(bumedata$stage==3),], na.rm =  T)
 
 mrsqc <- data.frame(cbind(bumedata$ID, bumedata$QC, bumedata$stage))
-colnames(mrsqc) <- c('ID', 'INS.QC', 'OFC.QC', 'VC.QC', 'stage')
+colnames(mrsqc) <- c('ID', 'INS.QC', 'VC.QC', 'stage')
 mrsqc_paired <- merge(mrsqc[which(mrsqc$stage==0),], mrsqc[which(mrsqc$stage==3),], by = "ID")
 mrsqc_paired$INS.QC <- ((mrsqc_paired$INS.QC.x == mrsqc_paired$INS.QC.y) & mrsqc_paired$INS.QC.x == 1)
-mrsqc_paired$OFC.QC <- ((mrsqc_paired$OFC.QC.x == mrsqc_paired$OFC.QC.y) & mrsqc_paired$OFC.QC.x == 1)
 mrsqc_paired$VC.QC <- ((mrsqc_paired$VC.QC.x == mrsqc_paired$VC.QC.y) & mrsqc_paired$VC.QC.x == 1)
-bumedata$QC.paired <- matrix(rep(0,3*dim(bumedata)[1]), nrow = dim(bumedata)[1], ncol = 3)
+bumedata$QC.paired <- matrix(rep(0,2*dim(bumedata)[1]), nrow = dim(bumedata)[1], ncol = 2)
 for (i in c(1:dim(bumedata)[1])){
-  bumedata$QC.paired[i,] <- as.matrix(mrsqc_paired[which(mrsqc_paired$ID == bumedata$ID[i]), c(10:12)])
+  bumedata$QC.paired[i,] <- as.matrix(mrsqc_paired[which(mrsqc_paired$ID == bumedata$ID[i]), c(8:9)])
 }
 counts[3,] <- colSums(bumedata$QC.paired, na.rm = T)/2
 print(counts) 
-write.xlsx(counts, file="resultsoutputNew.xls", sheetName = "MRSafterQC", append = T)
-
-
+write.xlsx(counts, file="resultoutputNew.xls", sheetName = "MRSafterQC", append = T)
 
 # 4.1 data description 
 colnames(bumedata)[which(colnames(bumedata)=="GABA.NAA.tissue.corrected.x")] <- "INS.GABA.NAA.tissue.corrected"
 colnames(bumedata)[which(colnames(bumedata)=="NAA.tissue.corrected.x")] <- "INS.NAA.tissue.corrected"
 colnames(bumedata)[which(colnames(bumedata)=="GABA.Glx.tissue.corrected.x")] <- "INS.GABA.Glx.tissue.corrected"
 
-colnames(bumedata)[which(colnames(bumedata)=="GABA.NAA.tissue.corrected.y")] <- "OFC.GABA.NAA.tissue.corrected"
-colnames(bumedata)[which(colnames(bumedata)=="NAA.tissue.corrected.y")] <- "OFC.NAA.tissue.corrected"
-colnames(bumedata)[which(colnames(bumedata)=="GABA.Glx.tissue.corrected.y")] <- "OFC.GABA.Glx.tissue.corrected"
-
-colnames(bumedata)[which(colnames(bumedata)=="GABA.NAA.tissue.corrected")] <- "VC.GABA.NAA.tissue.corrected"
-colnames(bumedata)[which(colnames(bumedata)=="NAA.tissue.corrected")] <- "VC.NAA.tissue.corrected"
-colnames(bumedata)[which(colnames(bumedata)=="GABA.Glx.tissue.corrected")] <- "VC.GABA.Glx.tissue.corrected"
+colnames(bumedata)[which(colnames(bumedata)=="GABA.NAA.tissue.corrected.y")] <- "VC.GABA.NAA.tissue.corrected"
+colnames(bumedata)[which(colnames(bumedata)=="NAA.tissue.corrected.y")] <- "VC.NAA.tissue.corrected"
+colnames(bumedata)[which(colnames(bumedata)=="GABA.Glx.tissue.corrected.y")] <- "VC.GABA.Glx.tissue.corrected"
 
 currentdata = bumedata[bumedata$stage==0,]
 ROI.names = c("INS","VC")
@@ -530,7 +510,7 @@ dimnames(tableCount) <- list(ROI.names, MRS.trans)
 testmat <- list()
 bp <- list()
 s <- 0
-index = matrix(c(1,3), ncol = 1, nrow = 2) # this was nedeed as we had droped OFC 
+index = matrix(c(1,2), ncol = 1, nrow = 2) 
 rownames(index) <- ROI.names
 t <- tableCount
 for (i in ROI.names){
@@ -674,40 +654,40 @@ ggarrange(plotlist = bp,
           ncol = length(MRS.trans), nrow = length(ROI.names)) 
 
 # individual change
-
-bp <- list()
-s = 0
-st <- 0
-for (i in ROI.names){
-  st <- st + 1
-  for (j in MRS.trans){
-    NOI <- paste0(i,j)
-    s = s + 1
-    #validity <- (bumedata[[paste0(i,j,'.SD')]]<20 & abs(scale(bumedata[[NOI]])) < 3)
-    #validity[bumedata$stage==0] <- ifelse(validity[bumedata$stage==0] & validity[bumedata$stage==3], TRUE, FALSE)
-    #validity[bumedata$stage==3] <- ifelse(validity[bumedata$stage==0] & validity[bumedata$stage==3], TRUE, FALSE)
-    validity <- (bumedata$QC.paired[,index[i,1]] == 1) #(abs(scale(currentdata[[NOI]])) < 3) 
-    dat <- bumedata[which(validity==TRUE),]
-    
-    bp[[s]] <- ggplot(data=dat, aes_string(x="stage", y=NOI, group="ID")) +
-      geom_line(aes(linetype=group4plot)) + 
-      geom_point(aes(shape=group4plot))  +
-      theme(legend.position=c(0.7,0.9), #legend.direction = 'horizontal', 
-            legend.background = element_rect(fill = NA, colour= NA),
-            legend.key = element_rect(colour = "transparent", fill = "white"),
-            legend.title = element_blank()) + labs(x = 'month')
-    if (s!=3) {
-      bp[[s]] = bp[[s]] + theme(legend.position="none") 
-    }
-    if (s!=5) {
-      bp[[s]] = bp[[s]] + labs(x = '')
-    }
-  }
-}
-ggarrange(plotlist = bp, 
-          ncol = length(MRS.trans), nrow = length(ROI.names))  
-
-dev.off()
+# 
+# bp <- list()
+# s = 0
+# st <- 0
+# for (i in ROI.names){
+#   st <- st + 1
+#   for (j in MRS.trans){
+#     NOI <- paste0(i,j)
+#     s = s + 1
+#     #validity <- (bumedata[[paste0(i,j,'.SD')]]<20 & abs(scale(bumedata[[NOI]])) < 3)
+#     #validity[bumedata$stage==0] <- ifelse(validity[bumedata$stage==0] & validity[bumedata$stage==3], TRUE, FALSE)
+#     #validity[bumedata$stage==3] <- ifelse(validity[bumedata$stage==0] & validity[bumedata$stage==3], TRUE, FALSE)
+#     validity <- (bumedata$QC.paired[,index[i,1]] == 1) #(abs(scale(currentdata[[NOI]])) < 3) 
+#     dat <- bumedata[which(validity==TRUE),]
+#     
+#     bp[[s]] <- ggplot(data=dat, aes_string(x="stage", y=NOI, group="ID")) +
+#       geom_line(aes(linetype=group4plot)) + 
+#       geom_point(aes(shape=group4plot))  +
+#       theme(legend.position=c(0.7,0.9), #legend.direction = 'horizontal', 
+#             legend.background = element_rect(fill = NA, colour= NA),
+#             legend.key = element_rect(colour = "transparent", fill = "white"),
+#             legend.title = element_blank()) + labs(x = 'month')
+#     if (s!=3) {
+#       bp[[s]] = bp[[s]] + theme(legend.position="none") 
+#     }
+#     if (s!=5) {
+#       bp[[s]] = bp[[s]] + labs(x = '')
+#     }
+#   }
+# }
+# ggarrange(plotlist = bp, 
+#           ncol = length(MRS.trans), nrow = length(ROI.names))  
+# 
+# dev.off()
 
 # 4.2 test drug effect on MRS
 # ancova
@@ -850,7 +830,7 @@ stats3.mrs <- data.frame(t = t, t.p = t.p, f=f, f.p=f.p, f.df = f.df,
                          shapitestp = shapitestp, leventestp = leventestp, 
                          perm.p = perm.p, fdr.perm.p = perm.fdr.p)
 print(stats3.mrs)
-write.xlsx(stats3.mrs, file="resultsoutputNew.xls", sheetName = "DEMRSM3baselineCov", append = T)
+write.xlsx(stats3.mrs, file="resultsoutput.xls", sheetName = "DEMRSM3baselineCov", append = T)
 
 #################
 # Figure 3
@@ -979,7 +959,7 @@ dev.off()
 # 1) cross-sectional correlations at both baseline and follow-up 
 stage = levels(bumedata$stage4plot)[c(2,1)]
 group = levels(bumedata$group4plot)
-beh = colnames(bumedata)[c(16:37)]
+beh = colnames(bumedata)[c(21:37)]
 dat <- data.frame()
 num.records <- length(stage) * length(group) * length(ROI.names) * length(MRS.trans)
 lookupindex <- array(rep(0,num.records*length(beh)), 
@@ -1057,46 +1037,46 @@ s = 0
 for (g in group){
   for (i in ROI.names){
     for (j in MRS.trans){
-        NOI <- paste0(i,j)
+      NOI <- paste0(i,j)
+      
+      
+      validity <- bumedata$QC.paired[,index[i,1]]
+      dat <- bumedata[validity==TRUE,]
+      
+      baseline.mrs <- dat[[NOI]][dat$stage4plot == "baseline" & dat$group4plot == g]
+      delta.mrs <- baseline.mrs - dat[[NOI]][dat$stage4plot == "3 months" & dat$group4plot == g]
+      covariates <- cbind(dat$age, dat$sex, dat$IQ)
+      covariates <- covariates[dat$stage4plot == "baseline" & dat$group4plot == g,]
+      
+      for  (b in beh){
+        s  = s + 1
+        lookupindex[g,i,j,b] <- s 
+        rownames(stats.corr)[s] <- paste(g,i,j,b,sep = ",")
+        baseline.beh <- dat[[b]][dat$stage4plot=="baseline" & dat$group4plot == g]
+        delta.beh <- baseline.beh - dat[[b]][dat$stage4plot == "3 months" & dat$group4plot == g]
         
-
-        validity <- bumedata$QC.paired[,index[i,1]]
-        dat <- bumedata[validity==TRUE,]
+        datanow <- cbind(baseline.mrs, delta.mrs, baseline.beh, delta.beh, covariates)
+        if (length(which(rowSums(is.na(datanow))>0)) > 0){
+          datanow <- datanow[-which(rowSums(is.na(datanow))>0),]
+        }
+        if (var(datanow[,6])==0){
+          r <- pcor.test(datanow[,2],datanow[,4], datanow[,c(1,3,5,7)], method = "spearman")
+          
+        }else{
+          r <- pcor.test(datanow[,2],datanow[,4], datanow[,c(1,3,5:7)], method = "spearman")
+          
+        }
         
-        baseline.mrs <- dat[[NOI]][dat$stage4plot == "baseline" & dat$group4plot == g]
-        delta.mrs <- baseline.mrs - dat[[NOI]][dat$stage4plot == "3 months" & dat$group4plot == g]
-        covariates <- cbind(dat$age, dat$sex, dat$IQ)
-        covariates <- covariates[dat$stage4plot == "baseline" & dat$group4plot == g,]
         
-        for  (b in beh){
-          s  = s + 1
-          lookupindex[g,i,j,b] <- s 
-          rownames(stats.corr)[s] <- paste(g,i,j,b,sep = ",")
-          baseline.beh <- dat[[b]][dat$stage4plot=="baseline" & dat$group4plot == g]
-          delta.beh <- baseline.beh - dat[[b]][dat$stage4plot == "3 months" & dat$group4plot == g]
-          
-          datanow <- cbind(baseline.mrs, delta.mrs, baseline.beh, delta.beh, covariates)
-          if (length(which(rowSums(is.na(datanow))>0)) > 0){
-            datanow <- datanow[-which(rowSums(is.na(datanow))>0),]
-          }
-          if (var(datanow[,6])==0){
-            r <- pcor.test(datanow[,2],datanow[,4], datanow[,c(1,3,5,7)], method = "spearman")
-            
-          }else{
-            r <- pcor.test(datanow[,2],datanow[,4], datanow[,c(1,3,5:7)], method = "spearman")
-            
-          }
-          
-          
-          stats.corr$r.p[s] = r$p.value
-          stats.corr$r[s] = r$estimate
-          stats.corr$n[s] = r$n
-          if (!is.na(r$p.value)){
-            if (r$p.value < 0.05) {
+        stats.corr$r.p[s] = r$p.value
+        stats.corr$r[s] = r$estimate
+        stats.corr$n[s] = r$n
+        if (!is.na(r$p.value)){
+          if (r$p.value < 0.05) {
             significant[s] <- 1
-            }
           }
         }
+      }
     }
   }
 }
@@ -1106,7 +1086,7 @@ write.xlsx(stats.corr, file="resultsoutputNew.xls", sheetName = "deltabehcorr", 
 # scatter plots if any interesting correlation has been identified
 #scatterplot(delta.cars~delta.ei, data=mydata[group==1,], smooth = FALSE, 
 #            ylab = paste('delta-', colnames(bumedata)[31+2*i-1]),
-#            xlab = paste('delta-', 'OFC:GABA/Glu+Gln'),
+#            xlab = paste('delta-', 'roi:GABA/Glu+Gln'),
 #            main = 'bumetanide')
          
         
@@ -1123,7 +1103,7 @@ NOI <- paste0(i,j)
 validity <- bumedata$QC.paired[,index[i,1]]
 dat <- bumedata[validity==TRUE,]
 perm.count <- matrix(rep(0, 17), nrow = 1, ncol = 17)
-stats.corr0 <- stats.corr[c(50:66), "r"]
+stats.corr0 <- stats.corr[c(35:51), "r"]
 for (nperm in c(1:perm.total)){
   baseline.mrs <- dat[[NOI]][which(dat$stage4plot == "baseline" & dat$group4plot == g)]
   delta.mrs <- baseline.mrs - dat[[NOI]][which(dat$stage4plot == "3 months" & dat$group4plot == g)]
@@ -1134,7 +1114,7 @@ for (nperm in c(1:perm.total)){
   covariates <- covariates[which(dat$stage4plot == "baseline" & dat$group4plot == g),]
   stats.corr.perm <- perm.count
   s <- 0
-  for  (b in beh[c(6:22)]){
+  for  (b in beh[c(1:17)]){
     s = s + 1
     baseline.beh <- dat[[b]][which(dat$stage4plot=="baseline" & dat$group4plot == g)]
     delta.beh <- baseline.beh - dat[[b]][which(dat$stage4plot == "3 months" & dat$group4plot == g)]
@@ -1154,109 +1134,64 @@ for (nperm in c(1:perm.total)){
 }
 write.xlsx(perm.count/3000, file="resultsoutputNew.xls", sheetName = "deltabehcorrperm", append = T)
 
+###################################################
+###########Stratify analysis#######################
+###################################################
+rm(list=setdiff(ls(),"bumedata"))
 library(FSA)   
 bumedata.baseline <- bumedata[bumedata$stage==0,]
 bumedata.3mont <- bumedata[bumedata$stage==3,]
 
-# behaviour grouping at baseline in the bumetanide group
-beh.index <- (bumedata.baseline$item_s3 > median(bumedata.baseline$item_s3) & bumedata.baseline$group == 1)
-bumedata.3mont$group.stritify.beh <- bumedata.3mont$group
-for (i in bumedata.baseline$ID[beh.index]){
-  bumedata.3mont$group.stritify.beh[which(bumedata.3mont$ID == i)] = 2
+validity <- (bumedata.baseline$QC[,1]==1) # applying baseline-IC QC
+bume_baseline = bumedata.baseline[validity,]  
+bume_3mont = bumedata.3mont[validity,]
+
+#behaviour grouping at baseline in the bumetanide group
+beh.index <- (bume_baseline$cars_tot > median(bume_baseline$cars_tot) & bume_baseline$group == 1)
+bume_3mont$group.stritify.beh <- bume_3mont$group
+for (i in bume_baseline$ID[beh.index]){
+  bume_3mont$group.stritify.beh[which(bume_3mont$ID == i)] = 2
 }
-bumedata.3mont$group.stritify.beh <- as.factor(bumedata.3mont$group.stritify.beh)
-levels(bumedata.3mont$group.stritify.beh) <- c("control", "bumetanide.less", "bumetanide.more")
+bume_3mont$group.stritify.beh <- as.factor(bume_3mont$group.stritify.beh)
+levels(bume_3mont$group.stritify.beh) <- c("control", "bumetanide.less", "bumetanide.more")
 
 # MRS grouping at baseline in the bumetanide group
-mrs.index <- (bumedata.baseline$INS.GABA.Glx.tissue.corrected > 
-                median(bumedata.baseline$INS.GABA.Glx.tissue.corrected, na.rm = T) & 
-                bumedata.baseline$group == 1)
-bumedata.3mont$group.stritify.mrs <- bumedata.3mont$group
-for (i in bumedata.baseline$ID[mrs.index]){
-  bumedata.3mont$group.stritify.mrs[which(bumedata.3mont$ID == i)] = 2
+mrs.index <- (bume_baseline$INS.GABA.Glx.tissue.corrected > 
+                median(bume_baseline$INS.GABA.Glx.tissue.corrected, na.rm = T) & 
+                bume_baseline$group == 1)
+bume_3mont$group.stritify.mrs <- bume_3mont$group
+for (i in bume_baseline$ID[mrs.index]){
+  bume_3mont$group.stritify.mrs[which(bume_3mont$ID == i)] = 2
 }
-bumedata.3mont$group.stritify.mrs <- as.factor(bumedata.3mont$group.stritify.mrs)
-levels(bumedata.3mont$group.stritify.mrs) <- c("control", "bumetanide.lower", "bumetanide.higher")
+bume_3mont$group.stritify.mrs <- as.factor(bume_3mont$group.stritify.mrs)
+levels(bume_3mont$group.stritify.mrs) <- c("control", "bumetanide.lower", "bumetanide.higher")
 
-table(bumedata.3mont$group.stritify.mrs, bumedata.3mont$group.stritify.beh)
+table(bume_3mont$group.stritify.mrs, bume_3mont$group.stritify.beh)
 
-bumedata.3mont$group.stritify <- matrix(rep(0,dim(bumedata.3mont)[1]),ncol=1, nrow=dim(bumedata.3mont)[1])
-for (i in c(1:dim(bumedata.3mont)[1])){
-  if (bumedata.3mont$group.stritify.mrs[i] == "control" && bumedata.3mont$group.stritify.beh[i] == "control"){
-    bumedata.3mont$group.stritify[i] = "control"
-  }
-  if (bumedata.3mont$group.stritify.mrs[i] == "bumetanide.lower" && bumedata.3mont$group.stritify.beh[i] == "bumetanide.less"){
-    bumedata.3mont$group.stritify[i] = "bumetanide1"
-  } 
-  if (bumedata.3mont$group.stritify.mrs[i] == "bumetanide.lower" && bumedata.3mont$group.stritify.beh[i] == "bumetanide.more"){
-    bumedata.3mont$group.stritify[i] = "bumetanide2"
-  } 
-  if (bumedata.3mont$group.stritify.mrs[i] == "bumetanide.higher" && bumedata.3mont$group.stritify.beh[i] == "bumetanide.less"){
-    bumedata.3mont$group.stritify[i] = "bumetanide3"
-  } 
-  if (bumedata.3mont$group.stritify.mrs[i] == "bumetanide.higher" && bumedata.3mont$group.stritify.beh[i] == "bumetanide.more"){
-    bumedata.3mont$group.stritify[i] = "bumetanide4"
-  }
-}
-bumedata.3mont$group.stritify = as.factor(bumedata.3mont$group.stritify)
-#levels(bumedata.3mont$group.stritify) <- c("placebo", "bumetanide1", "bumetanide2")
 
-table(bumedata.3mont$CRI_score, bumedata.3mont$group.stritify.mrs)
-table(bumedata.3mont$CRI_index, bumedata.3mont$group.stritify.mrs)
-table(bumedata.3mont$CRI_severity, bumedata.3mont$group.stritify.mrs)
-table(bumedata.3mont$CRI_total, bumedata.3mont$group.stritify.mrs)
-table(bumedata.3mont$CRI_side, bumedata.3mont$group.stritify.mrs)
-
+table(bume_3mont$CGI_score, bume_3mont$group.stritify.mrs)
+table(bume_3mont$CGI_index, bume_3mont$group.stritify.mrs)
+table(bume_3mont$CGI_severity, bume_3mont$group.stritify.mrs)
+table(bume_3mont$CGI_total, bume_3mont$group.stritify.mrs)
+table(bume_3mont$CGI_side, bume_3mont$group.stritify.mrs)
 
 # nonparametric test
-stats.cri <- matrix(rep(0, 4), ncol = 4, nrow = 4)
-rownames(stats.cri) <- colnames(bumedata.baseline)[c(54,55,124,125)]
-colnames(stats.cri) <- c("degree of freedom", "Kruskal-Wallis chi-squared", "p-value", "fdr-p")
-# wilcox.test(CRI_score~group, data=bumedata.3mont)  failed to converge
-temp.index <- c(1,1,3,3)
+# cars & cgi,among three groups
+stats.cgi <- matrix(rep(0, 4), ncol = 4, nrow = 7)
+rownames(stats.cgi) <- colnames(bume_baseline)[c(21,22,44:48)]
+colnames(stats.cgi) <- c("degree of freedom", "Kruskal-Wallis chi-squared", "p-value", "fdr-p")
+# wilcox.test(cgi_score~group, data=bumedata.3mont)  failed to converge
 s <- 1
-for (i in c(54,55,124,125)){
-  validity <- (bumedata.3mont$QC[,temp.index[s]]==1)
-  kstest <- kruskal.test(bumedata.baseline[validity,i]~bumedata.3mont[validity,]$group.stritify.beh, data=bumedata.baseline[validity,])  # significant
-  stats.cri[s,c(1:3)] <- c(kstest$parameter, kstest$statistic, kstest$p.value)
+
+for (i in c(21,22,44:48)){
+  validity <- (bume_3mont$QC[,1]==1)
+  kstest <- kruskal.test(bume_3mont[,i]~bume_3mont$group.stritify.mrs, data=bume_3mont)  
+  stats.cgi[s,c(1:3)] <- c(kstest$parameter, kstest$statistic, kstest$p.value)
   s <- s + 1
 }
 
-stats.cri[,"fdr-p"] <- t(p.adjust(stats.cri[,"p-value"], method = "fdr"))
-print(stats.cri)
+stats.cgi[c(3:7),"fdr-p"] <- t(p.adjust(stats.cgi[c(3:7),"p-value"], method = "fdr"))
+print(stats.cgi)
 
-
-# comparison between MRS patients and no-MRS patients in the control group
-withmrs.index <- (rowSums(is.na(bumedata.baseline$QC[,c(1,3)]))==0 & bumedata.baseline$group==0) # control & MRS
-
-bumedata.3mont$group.stritify.withmrs <- bumedata.3mont$group
-for (i in bumedata.baseline$ID[which(withmrs.index)]){
-  bumedata.3mont$group.stritify.withmrs[which(bumedata.3mont$ID == i)] = 3
-}
-bumedata.3mont$group.stritify.withmrs <- as.factor(bumedata.3mont$group.stritify.withmrs)
-levels(bumedata.3mont$group.stritify.withmrs) <- c("control", "bumetanide", "control.mrs")
-
-table(bumedata.3mont$group.stritify.withmrs)
-
-# nonparametric test
-stats.cri.mrs <- matrix(rep(0, 4), ncol = 4, nrow = 39)
-rownames(stats.cri.mrs) <- colnames(bumedata.baseline)[c(5:43)]
-colnames(stats.cri.mrs) <- c("degree of freedom", "Kruskal-Wallis chi-squared", "p-value", "fdr-p")
-# wilcox.test(CRI_score~group, data=bumedata.3mont)  failed to converge
-s <- 1
-for (i in c(5:43)){
-  kstest <- kruskal.test(bumedata.baseline[,i]~bumedata.3mont$group.stritify.mrs, data=bumedata.baseline)  # significant
-  stats.cri.mrs[s,c(1:3)] <- c(kstest$parameter, kstest$statistic, kstest$p.value)
-  s <- s + 1
-}
-
-stats.cri.mrs[,"fdr-p"] <- t(p.adjust(stats.cri.mrs[,"p-value"], method = "fdr"))
-print(stats.cri.mrs)
-
-
-
-
-
-
-
-
+write.xlsx(stats.cgi, file="resultsoutputNew.xls", 
+           sheetName = "cgi3group", append = T)
