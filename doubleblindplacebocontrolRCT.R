@@ -1,9 +1,9 @@
 # RCT: 3-month oral Bumetanide for ASD 
 # R code for Data Analysis 
-# Miss. Yuan Dai, Dr. Lingli Zhang @ Xinhua Hospital 
+# Dr. Yuan Dai, Dr. Lingli Zhang @ Xinhua Hospital 
 # Dr. Qiang Luo @ Fudan University
-# Date of release: 7th Feb 2020
-# Version: v1.0.0.1
+# Date of release: 20th Feb 2020
+# Version: v1.0.0.2
 # Email: qluo@fudan.edu.cn
 
 library(dplyr)
@@ -41,13 +41,13 @@ library(Rmisc)
 
 # ## 1.1 read clinical data: in the long format
 
-bumedata <- read.csv("bumedata_behav_mrs_article.csv", header = TRUE)
+bumedata <- read.csv("bumedata_behav_mrs.csv", header = TRUE)
 
 ##################################
 # MANUALLY CHECKING IS NECESSARY #
 ##################################
 
-bumedata <- bumedata[-which(bumedata$id==812),]   #this subject did not take any drug
+bumedata <- bumedata[-which(bumedata$id==1104),]   #this subject did not take any drug
 
 # 3) check whether the variables are numeric or factor. If it is factor, we need to know which levels it has; 
 # we only allow subject names and sex to be factor in this case.
@@ -61,10 +61,10 @@ for (i in c(1:length(bumedata))){
 
 bumedata$group <- ifelse(bumedata$group=='1',1,0)
 bumedata$stage<- ifelse(bumedata$stage=='3',1,0)
-bumedata$sex <- ifelse(bumedata$sex=='1',1,0)
+bumedata$sex <- ifelse(bumedata$sex_1male2female=='1',1,0)
 bumedata$sex <- as.factor(bumedata$sex)
-bumedata$withGDD_cutoffDQ75IQ70 <- ifelse(bumedata$withGDD_cutoffDQ75IQ70=='1',1,0)
-bumedata$withGDD_cutoffDQ75IQ70 <- as.factor(bumedata$withGDD_cutoffDQ75IQ70)
+bumedata$cutoffDQ75IQ70 <- ifelse(bumedata$cutoffDQ75IQ70=='1',1,0)
+bumedata$cutoffDQ75IQ70 <- as.factor(bumedata$cutoffDQ75IQ70)
 
 #some missing values were 999  # No signal]
 which(bumedata==999)
@@ -105,31 +105,31 @@ bumedata.3mont <- bumedata[which(bumedata$stage == 1),]
 table(bumedata.baseline$group, bumedata.baseline$sex)
 prop.test(table(bumedata.baseline$group, bumedata.baseline$sex), correct = FALSE)
 
-table(bumedata.baseline$group, bumedata.baseline$withGDD_cutoffDQ75IQ70)
-prop.test(table(bumedata.baseline$group, bumedata.baseline$withGDD_cutoffDQ75IQ70), correct = FALSE)
+table(bumedata.baseline$group, bumedata.baseline$cutoffDQ75IQ70)
+prop.test(table(bumedata.baseline$group, bumedata.baseline$cutoffDQ75IQ70), correct = FALSE)
 
 
-print(colnames(bumedata)[22:43])
-desmat <- matrix(rep(0,16*22), ncol = 16, nrow = 22)
-rownames(desmat) <- colnames(bumedata.baseline)[c(22:43)]
+print(colnames(bumedata)[17:43])
+desmat <- matrix(rep(0,16*27), ncol = 16, nrow = 27)
+rownames(desmat) <- colnames(bumedata.baseline)[c(17:43)]
 colnames(desmat) <- c("n","min", "max", "mean", "sd",
                       "n","min", "max", "mean", "sd",
                       "t.df", "t.t", "t.p",
                       "kw.df", "kw.chi-squared", "kw.p")
-for (i in 22:43){
+for (i in 17:43){
   # descriptive table:: desmat
   description <- describeBy(bumedata.baseline[,i], group = bumedata.baseline$group, mat = TRUE, na.rm = TRUE )
-  desmat[i-21,c(1:10)] <- as.matrix(cbind(description[1, c("n","min", "max", "mean", "sd")],
+  desmat[i-16,c(1:10)] <- as.matrix(cbind(description[1, c("n","min", "max", "mean", "sd")],
                                          description[2, c("n","min", "max", "mean", "sd")]))
   # baseline comparison: testmat
   ttest <- t.test(bumedata.baseline[,i]~group, data = bumedata.baseline)
-  desmat[i-21,11] <- ttest$parameter # degree-of-freedom
-  desmat[i-21,12] <- ttest$statistic # t-statistic
-  desmat[i-21,13] <- ttest$p.value #p value
+  desmat[i-16,11] <- ttest$parameter # degree-of-freedom
+  desmat[i-16,12] <- ttest$statistic # t-statistic
+  desmat[i-16,13] <- ttest$p.value #p value
   kwtest <- kruskal.test(bumedata.baseline[,i]~group, data = bumedata.baseline)
-  desmat[i-21,14] <- kwtest$parameter # degree-of-freedom
-  desmat[i-21,15] <- kwtest$statistic # t-statistic
-  desmat[i-21,16] <- kwtest$p.value #p value
+  desmat[i-16,14] <- kwtest$parameter # degree-of-freedom
+  desmat[i-16,15] <- kwtest$statistic # t-statistic
+  desmat[i-16,16] <- kwtest$p.value #p value
 }
 
 print(desmat)
@@ -137,26 +137,26 @@ write.xlsx(desmat, file="output_rct_behav119.xls", sheetName = "baselinebehaviou
 
 
 # 2.2 follow-up
-desmat <- matrix(rep(0,16*22), ncol = 16, nrow = 22)
-rownames(desmat) <- colnames(bumedata.3mont)[c(22:43)]
+desmat <- matrix(rep(0,16*17), ncol = 16, nrow = 17)
+rownames(desmat) <- colnames(bumedata.3mont)[c(27:43)]
 colnames(desmat) <- c("n","min", "max", "mean", "sd",
                       "n","min", "max", "mean", "sd",
                       "t.df", "t.t", "t.p",
                       "kw.df", "kw.chi-squared", "kw.p")
-for (i in 22:43){
+for (i in 27:43){
   # descriptive table:: desmat
   description <- describeBy(bumedata.3mont[,i], group = bumedata.3mont$group, mat = TRUE, na.rm = TRUE )
-  desmat[i-21,c(1:10)] <- as.matrix(cbind(description[1, c("n","min", "max", "mean", "sd")],
+  desmat[i-26,c(1:10)] <- as.matrix(cbind(description[1, c("n","min", "max", "mean", "sd")],
                                          description[2, c("n","min", "max", "mean", "sd")]))
-  # baseline comparison: testmat
+  # follow-up comparison: testmat
   ttest <- t.test(bumedata.3mont[,i]~group, data = bumedata.3mont)
-  desmat[i-21,11] <- ttest$parameter # degree-of-freedom
-  desmat[i-21,12] <- ttest$statistic # t-statistic
-  desmat[i-21,13] <- ttest$p.value #p value
+  desmat[i-26,11] <- ttest$parameter # degree-of-freedom
+  desmat[i-26,12] <- ttest$statistic # t-statistic
+  desmat[i-26,13] <- ttest$p.value #p value
   kwtest <- kruskal.test(bumedata.3mont[,i]~group, data = bumedata.3mont)
-  desmat[i-21,14] <- kwtest$parameter # degree-of-freedom
-  desmat[i-21,15] <- kwtest$statistic # t-statistic
-  desmat[i-21,16] <- kwtest$p.value #p value
+  desmat[i-26,14] <- kwtest$parameter # degree-of-freedom
+  desmat[i-26,15] <- kwtest$statistic # t-statistic
+  desmat[i-26,16] <- kwtest$p.value #p value
 }
 print(desmat)
 write.xlsx(desmat, file="output_rct_behav119.xls", sheetName = "month3behaviour", append = T)
@@ -278,12 +278,12 @@ write.xlsx(cbind(perm.p.cars, perm.p.cars.fdr), file="output_rct_behav119.xls",
 
 # nonparametric test
 stats.cgi <- matrix(rep(0, 3), ncol = 3, nrow = 1)
-rownames(stats.cgi) <- colnames(bumedata.3mont)[45]
+rownames(stats.cgi) <- colnames(bumedata.3mont)[44]
 colnames(stats.cgi) <- c("degree of freedom", "Kruskal-Wallis chi-squared", "p-value")
 # wilcox.test(CGI_score~group, data=bumedata.3mont)  failed to converge
-for (i in c(45)){
+for (i in c(44)){
   kstest <- kruskal.test(bumedata.3mont[,i]~group, data=bumedata.3mont)  # significant
-  stats.cgi[i-44,c(1:3)] <- c(kstest$parameter, kstest$statistic, kstest$p.value)
+  stats.cgi[i-43,c(1:3)] <- c(kstest$parameter, kstest$statistic, kstest$p.value)
 }
 print(stats.cgi)
 write.xlsx(stats.cgi, file="output_rct_behav119.xls", sheetName = "month3CGI2", append = T)
@@ -320,8 +320,12 @@ bumedata$QC <- matrix(rep(0,dim(bumedata)[1]), nrow = dim(bumedata)[1])
 bumedata$QC <- (bumedata[[NAAplusSD]] < 20 & bumedata[[GABAplusSD]] < 20 & bumedata[[fwhm]] < 0.05 & bumedata[[snr]] > 15) 
 bumedata$QC <- ifelse(bumedata$QC=='TRUE',1,0)
 
-# subject ID 617 T1 image was missing at month 3
-bumedata$QC[which(bumedata$id==617 & which(bumedata$stage == 1))] = 0
+# subjects ID 1071 and 1045, T1 images were missing at month 3
+bumedata$QC[which(bumedata$id==1071 & which(bumedata$stage == 1))] = 0
+bumedata$QC[which(bumedata$id==1045 & which(bumedata$stage == 1))] = 0
+# subject ID 1012 IC voxel,wrong position at both time points
+bumedata$QC[which(bumedata$id==1012)] = 0
+
 
 # count Num, surviving qc
 counts <- matrix(rep(0,3*1), nrow = 3, ncol = 1, dimnames = list(c("baseline", "3 month", 'paired'), ROI.names))
@@ -381,7 +385,7 @@ for (j in MRS.trans){
   # baseline comparison: testmat
   
   # linear model comparison
-  fit <- lm(score~group + age + sex + withGDD_cutoffDQ75IQ70, data = currentdata[validity==1,])
+  fit <- lm(score~group + age + sex + cutoffDQ75IQ70, data = currentdata[validity==1,])
   desmat[s,11] <- shapiro.test(residuals(fit))$p.value
   desmat[s,12]<- leveneTest(score ~ as.factor(group), data=currentdata[validity==1,])[1,3]
   desmat[s,13] <- summary(fit)$coefficients["group","t value"]
@@ -416,6 +420,7 @@ t <- matrix(rep(0, length(ROI.names) * length(MRS.trans)), nrow = length(ROI.nam
 dimnames(t) <- list(ROI.names, MRS.trans)
 shapitestp <- t
 leventestp <- t
+eta.sq.partial <- t
 f <- t
 t.p <- t + 1
 t.df <- t
@@ -434,7 +439,7 @@ for (j in MRS.trans){
   score <- (dat[[NOI]])
   #baseline.score <- score
   #baseline.score[dat$stage==1] <- baseline.score[dat$stage==0]
-  fit <- lmer( score ~  stage + group + group*stage + age + sex + withGDD_cutoffDQ75IQ70 + (1|id), data=dat)  
+  fit <- lmer( score ~  stage + group + group*stage + age + sex + cutoffDQ75IQ70 + (1|id), data=dat)  
   shapitestp[ROI.names,j] <- shapiro.test(residuals(fit))$p.value
   leventestp[ROI.names,j] <- leveneTest(score ~ as.factor(group), data=bumedata[validity==1,])[1,3]
   t[ROI.names,j] <- summary(fit)$coefficients["stage:group","t value"]
@@ -444,6 +449,7 @@ for (j in MRS.trans){
   f[ROI.names,j] <- ftests["stage:group","F value"]
   f.p[ROI.names,j] <- ftests["stage:group","Pr(>F)"]
   f.df[ROI.names,j] <- ftests["stage:group","DenDF"]
+  eta.sq.partial[ROI.names,j] <- eta_sq(fit, partial = TRUE)[6,2] 
 }
 
 
@@ -461,15 +467,15 @@ for (j in MRS.trans){
   #baseline.score <- score
   #baseline.score[currentdata$stage[validity==1]==1] <- baseline.score[currentdata$stage[validity==1]==0]
   # linear model comparison
-  fit1 <- lmer(score ~ stage + group + stage * group + age + sex + withGDD_cutoffDQ75IQ70 + (1|id), data = currentdata[validity==1,])
-  fit0 <- lmer(score ~ stage + group + age + sex + withGDD_cutoffDQ75IQ70 + (1|id), data = currentdata[validity==1,])
+  fit1 <- lmer(score ~ stage + group + stage * group + age + sex + cutoffDQ75IQ70 + (1|id), data = currentdata[validity==1,])
+  fit0 <- lmer(score ~ stage + group + age + sex + cutoffDQ75IQ70 + (1|id), data = currentdata[validity==1,])
   perm.p[ROI.names,j] <- permlmer(fit0, fit1, perms = 3000, ncore = 8, plot = FALSE)$"Perm-p"[2]
 }
 
 stats3.mrs <- data.frame(t = t, t.p = t.p, f=f, f.p=f.p, f.df = f.df,
-                         shapitestp = shapitestp, leventestp = leventestp,
+                         shapitestp = shapitestp, leventestp = leventestp, eta.sq.partial = eta.sq.partial,
                          perm.p = perm.p)
-colnames(stats3.mrs) <- c("t","t.p","f","f.p", "f.df", "shapitestp", "leventestp", "perm.p")
+colnames(stats3.mrs) <- c("t","t.p","f","f.p", "f.df", "shapitestp", "leventestp", "eta.sq.partial", "perm.p")
 print(stats3.mrs)
 write.xlsx(stats3.mrs, file="output_rct_mrs.xls", sheetName = "DEMRSM3baselineCov2", append = T)
 
@@ -477,7 +483,7 @@ write.xlsx(stats3.mrs, file="output_rct_mrs.xls", sheetName = "DEMRSM3baselineCo
 #################
 # Figure 2B
 #################
-ICGABA <- bumedata[which(bumedata$QC.paired==1), c("id","Name","stage4plot","group4plot","id_RCT","ic_gaba_corr")]
+ICGABA <- bumedata[which(bumedata$QC.paired==1), c("stage4plot","group4plot","id","ic_gaba_corr")]
 colnames(ICGABA)[c(3,4)] <- c("stage","group")
 #ICGABA <- summarySE(ICGABA, measurevar="ic_gaba_corr",groupvars=c("group","stage"))
 rm(p)
@@ -486,7 +492,7 @@ p <- ggbarplot(ICGABA, x="group", y="ic_gaba_corr", fill = "stage",
                position=position_dodge(0.8)) + 
   stat_compare_means(aes(group = stage), paired = TRUE, label = "p.signif", label.y = 0.5)
 p+labs(x="Group",y="Change of GABA/NAA ratio from baseline to month 3")
-ggsave("Figure2B2.pdf")
+ggsave("Figure2B.pdf")
 dev.off()
 
 
@@ -515,7 +521,7 @@ for (k in stage){
       NOI <- paste0(ROI.names,j)
       validity <- bumedata$QC
       dat <- bumedata[validity==TRUE & bumedata$group4plot == g & bumedata$stage4plot == k, ]
-      covariates <- cbind(bumedata$age, bumedata$sex, bumedata$withGDD_cutoffDQ75IQ70)
+      covariates <- cbind(bumedata$age, bumedata$sex, bumedata$cutoffDQ75IQ70)
       for (b in beh){
         print(s)
         s = s + 1
@@ -571,7 +577,7 @@ for (g in group){
     
     baseline.mrs <- dat[[NOI]][which(dat$stage4plot == "baseline" & dat$group4plot == g)]
     delta.mrs <- baseline.mrs - dat[[NOI]][which(dat$stage4plot == "3 months" & dat$group4plot == g)]
-    covariates <- cbind(dat$age, dat$sex, dat$withGDD_cutoffDQ75IQ70)[which(dat$stage4plot == "baseline" & dat$group4plot == g),]
+    covariates <- cbind(dat$age, dat$sex, dat$cutoffDQ75IQ70)[which(dat$stage4plot == "baseline" & dat$group4plot == g),]
 
     for  (b in beh){
       s  = s + 1
